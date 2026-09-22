@@ -1,0 +1,382 @@
+<div class="page">
+
+  <div class="container">
+
+    <header class="header">
+
+      <div>
+
+        <h1>
+          Movie Content Management
+        </h1>
+
+        <p>
+          Search movies using OMDb and manage your saved content.
+        </p>
+
+      </div>
+
+    </header>
+
+
+    <section class="search-section">
+
+      <h2>
+        Search Movie
+      </h2>
+
+
+      <div class="search-box">
+
+        <input
+          type="text"
+          [(ngModel)]="searchTitle"
+          placeholder="Enter movie title..."
+          (keyup.enter)="searchMovie()"
+        />
+
+
+        <button
+          class="primary-button"
+          (click)="searchMovie()"
+          [disabled]="loading"
+        >
+
+          {{
+            loading
+              ? 'Searching...'
+              : 'Search'
+          }}
+
+        </button>
+
+      </div>
+
+
+      <div
+        *ngIf="errorMessage"
+        class="message error"
+      >
+
+        {{ errorMessage }}
+
+      </div>
+
+
+      <div
+        *ngIf="successMessage"
+        class="message success"
+      >
+
+        {{ successMessage }}
+
+      </div>
+
+
+      <div
+        *ngIf="searchResult"
+        class="search-result"
+      >
+
+
+        <img
+          *ngIf="
+            searchResult.Poster &&
+            searchResult.Poster !== 'N/A'
+          "
+          [src]="searchResult.Poster"
+          [alt]="searchResult.Title"
+        />
+
+
+        <div class="result-info">
+
+          <h3>
+            {{ searchResult.Title }}
+          </h3>
+
+
+          <p>
+            {{ searchResult.Year }}
+          </p>
+
+
+          <p>
+            {{ searchResult.Genre }}
+          </p>
+
+
+          <p>
+            <strong>
+              IMDb:
+            </strong>
+
+            {{ searchResult.imdbRating }}
+          </p>
+
+
+          <p>
+            <strong>
+              Director:
+            </strong>
+
+            {{ searchResult.Director }}
+          </p>
+
+
+          <p class="plot">
+            {{ searchResult.Plot }}
+          </p>
+
+
+          <button
+            class="primary-button"
+            (click)="importMovie()"
+          >
+
+            Add to Library
+
+          </button>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+
+    <section class="library">
+
+      <div class="library-header">
+
+        <h2>
+          Saved Movies
+        </h2>
+
+        <span class="count">
+          {{ contents.length }} movie(s)
+        </span>
+
+      </div>
+
+
+      <div
+        *ngIf="contents.length === 0"
+        class="empty-state"
+      >
+
+        No movies saved yet.
+
+      </div>
+
+
+      <div class="movie-grid">
+
+
+        <article
+          *ngFor="let movie of contents"
+          class="movie-card"
+        >
+
+
+          <img
+            *ngIf="
+              movie.poster &&
+              movie.poster !== 'N/A'
+            "
+            [src]="movie.poster"
+            [alt]="movie.title"
+          />
+
+
+          <div
+            class="movie-info"
+            *ngIf="
+              editingId !== movie.id
+            "
+          >
+
+
+            <h3>
+              {{ movie.title }}
+            </h3>
+
+
+            <p class="year">
+              {{ movie.year }}
+            </p>
+
+
+            <p>
+              {{ movie.genre }}
+            </p>
+
+
+            <p>
+
+              <strong>
+                IMDb:
+              </strong>
+
+              {{ movie.rating }}
+
+            </p>
+
+
+            <p>
+
+              <strong>
+                Director:
+              </strong>
+
+              {{ movie.director }}
+
+            </p>
+
+
+            <p class="card-plot">
+              {{ movie.plot }}
+            </p>
+
+
+            <div class="actions">
+
+
+              <button
+                class="edit-button"
+                (click)="startEdit(movie)"
+              >
+
+                Edit
+
+              </button>
+
+
+              <button
+                class="delete-button"
+                (click)="deleteMovie(movie.id)"
+              >
+
+                Delete
+
+              </button>
+
+
+            </div>
+
+          </div>
+
+
+
+          <div
+            class="movie-info edit-form"
+            *ngIf="
+              editingId === movie.id &&
+              editForm
+            "
+          >
+
+
+            <h3>
+              Edit Movie
+            </h3>
+
+
+            <label>
+              Title
+            </label>
+
+            <input
+              [(ngModel)]="editForm.title"
+              type="text"
+            />
+
+
+            <label>
+              Year
+            </label>
+
+            <input
+              [(ngModel)]="editForm.year"
+              type="number"
+            />
+
+
+            <label>
+              Genre
+            </label>
+
+            <input
+              [(ngModel)]="editForm.genre"
+              type="text"
+            />
+
+
+            <label>
+              Rating
+            </label>
+
+            <input
+              [(ngModel)]="editForm.rating"
+              type="number"
+              step="0.1"
+            />
+
+
+            <label>
+              Director
+            </label>
+
+            <input
+              [(ngModel)]="editForm.director"
+              type="text"
+            />
+
+
+            <label>
+              Plot
+            </label>
+
+            <textarea
+              [(ngModel)]="editForm.plot"
+            >
+            </textarea>
+
+
+            <div class="actions">
+
+
+              <button
+                class="save-button"
+                (click)="saveEdit()"
+              >
+
+                Save
+
+              </button>
+
+
+              <button
+                class="cancel-button"
+                (click)="cancelEdit()"
+              >
+
+                Cancel
+
+              </button>
+
+
+            </div>
+
+          </div>
+
+        </article>
+
+      </div>
+
+    </section>
+
+  </div>
+
+</div>
