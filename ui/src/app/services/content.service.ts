@@ -11,7 +11,7 @@ import { OmdbMovie } from '../models/omdb-movie.model';
 export class ContentService {
 
   private readonly apiUrl =
-    'http://localhost:8080/api/contents';
+    'https://movie-content-management.onrender.com/api/contents';
 
   constructor(
     private http: HttpClient
