@@ -4,14 +4,14 @@ import { Observable } from 'rxjs';
 
 import { Content } from '../models/content.model';
 import { OmdbMovie } from '../models/omdb-movie.model';
+import { environment } from '../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ContentService {
 
-  private readonly apiUrl =
-    'https://movie-content-management.onrender.com/api/contents';
+  private readonly apiUrl = environment.apiUrl;
 
   constructor(
     private http: HttpClient
