@@ -1,11 +1,27 @@
+export type ContentType =
+  'MOVIE' |
+  'SERIES';
+
 export interface Content {
   id?: number;
+
   title: string;
-  year: number;
+
+  year: number | null;
+
   genre: string;
-  rating: number;
+
+  rating: number | null;
+
   plot: string;
+
   poster: string;
+
   director: string;
+
+  type?: ContentType;
+
   createdAt?: string;
+
+  version: number;
 }

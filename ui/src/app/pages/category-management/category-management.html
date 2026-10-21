@@ -1,0 +1,372 @@
+<div class="page">
+
+  <div class="container">
+
+    <header class="header">
+
+      <div>
+
+        <h1>
+          Category Management
+        </h1>
+
+        <p>
+          Create categories and assign them to movies or series.
+        </p>
+
+      </div>
+
+      <div class="header-actions">
+
+        <div class="account">
+
+          <strong>
+            {{ currentEmail }}
+          </strong>
+
+          <span>
+            {{ currentRole }}
+          </span>
+
+        </div>
+
+        <button
+          type="button"
+          class="secondary"
+          (click)="goToMovies()"
+        >
+          Back to Content
+        </button>
+
+        <button
+          type="button"
+          class="secondary"
+          (click)="logout()"
+        >
+          Logout
+        </button>
+
+      </div>
+
+    </header>
+
+
+    <div
+      *ngIf="errorMessage"
+      class="message error"
+      role="alert"
+      aria-live="assertive"
+    >
+      {{ errorMessage }}
+    </div>
+
+    <div
+      *ngIf="successMessage"
+      class="message success"
+      role="status"
+      aria-live="polite"
+    >
+      {{ successMessage }}
+    </div>
+
+
+    <div class="layout">
+
+      <!-- CATEGORY CRUD -->
+
+      <section class="panel">
+
+        <h2>
+          Categories
+        </h2>
+
+        <div class="create-row">
+
+          <div class="field">
+
+            <label for="new-category">
+              New category
+            </label>
+
+            <input
+              id="new-category"
+              type="text"
+              [(ngModel)]="newCategoryName"
+              placeholder="e.g. Drama"
+              (keyup.enter)="createCategory()"
+            />
+
+          </div>
+
+          <button
+            type="button"
+            class="primary"
+            (click)="createCategory()"
+            [disabled]="savingCategory"
+          >
+            {{
+              savingCategory
+                ? 'Saving...'
+                : 'Add'
+            }}
+          </button>
+
+        </div>
+
+
+        <p
+          *ngIf="
+            !loading &&
+            categories.length === 0
+          "
+          class="empty"
+        >
+          No categories yet.
+        </p>
+
+
+        <div class="category-list">
+
+          <div
+            *ngFor="let category of categories"
+            class="category-row"
+          >
+
+            <ng-container
+              *ngIf="
+                editingId !== category.id
+              "
+            >
+
+              <span class="category-name">
+                {{ category.name }}
+              </span>
+
+              <div class="row-actions">
+
+                <button
+                  type="button"
+                  class="edit"
+                  (click)="startEdit(category)"
+                >
+                  Edit
+                </button>
+
+                <button
+                  type="button"
+                  class="delete"
+                  (click)="deleteCategory(category)"
+                  [disabled]="isDeleting(category.id)"
+                >
+                  {{
+                    isDeleting(category.id)
+                      ? 'Deleting...'
+                      : 'Delete'
+                  }}
+                </button>
+
+              </div>
+
+            </ng-container>
+
+
+            <ng-container
+              *ngIf="
+                editingId === category.id
+              "
+            >
+
+              <input
+                type="text"
+                [(ngModel)]="editingName"
+                (keyup.enter)="saveEdit(category.id)"
+              />
+
+              <div class="row-actions">
+
+                <button
+                  type="button"
+                  class="save"
+                  (click)="saveEdit(category.id)"
+                  [disabled]="savingCategory"
+                >
+                  Save
+                </button>
+
+                <button
+                  type="button"
+                  class="secondary"
+                  (click)="cancelEdit()"
+                >
+                  Cancel
+                </button>
+
+              </div>
+
+            </ng-container>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- CONTENT ↔ CATEGORY -->
+
+      <section class="panel">
+
+        <h2>
+          Assign Categories
+        </h2>
+
+
+        <div class="field">
+
+          <label for="content-select">
+            Content
+          </label>
+
+          <select
+            id="content-select"
+            [(ngModel)]="selectedContentId"
+            (ngModelChange)="onContentChange()"
+          >
+
+            <option [ngValue]="null">
+              Select content
+            </option>
+
+            <option
+              *ngFor="let content of contents"
+              [ngValue]="content.id"
+            >
+              {{ content.title }}
+              —
+              {{
+                content.type === 'SERIES'
+                  ? 'Series'
+                  : 'Movie'
+              }}
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div
+          class="assign-box"
+          *ngIf="
+            selectedContentId !== null
+          "
+        >
+
+          <div class="field">
+
+            <label for="category-select">
+              Category
+            </label>
+
+            <select
+              id="category-select"
+              [(ngModel)]="selectedCategoryId"
+            >
+
+              <option [ngValue]="null">
+                Select category
+              </option>
+
+              <option
+                *ngFor="
+                  let category
+                  of availableCategories
+                "
+                [ngValue]="category.id"
+              >
+                {{ category.name }}
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <button
+            type="button"
+            class="primary"
+            (click)="assignCategory()"
+            [disabled]="
+              selectedCategoryId === null ||
+              assigning
+            "
+          >
+            {{
+              assigning
+                ? 'Assigning...'
+                : 'Assign'
+            }}
+          </button>
+
+        </div>
+
+
+        <div
+          class="assigned"
+          *ngIf="
+            selectedContentId !== null
+          "
+        >
+
+          <h3>
+            Assigned Categories
+          </h3>
+
+          <p
+            *ngIf="
+              assignedCategories.length === 0
+            "
+            class="empty"
+          >
+            No categories assigned.
+          </p>
+
+
+          <div class="chips">
+
+            <div
+              *ngFor="
+                let category
+                of assignedCategories
+              "
+              class="chip"
+            >
+
+              <span>
+                {{ category.name }}
+              </span>
+
+              <button
+                type="button"
+                (click)="removeCategory(category.id)"
+                [attr.aria-label]="
+                  'Remove ' +
+                  category.name
+                "
+              >
+                ×
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+    </div>
+
+  </div>
+
+</div>

@@ -7,17 +7,86 @@
       <div>
 
         <h1>
-          Movie Content Management
+          Content Management
         </h1>
 
         <p>
-          Search movies using OMDb and manage your saved content.
+          Search movies using OMDb and manage movies and series.
         </p>
+
+      </div>
+
+
+      <div class="account-area">
+
+        <div class="account-info">
+
+          <strong>
+            {{ currentEmail }}
+          </strong>
+
+          <span>
+            {{ currentRole }}
+          </span>
+
+        </div>
+
+
+        <button
+          *ngIf="isAdmin"
+          type="button"
+          class="secondary-button"
+          (click)="goToCategories()"
+        >
+          Categories
+        </button>
+
+        <button
+          *ngIf="isAdmin"
+          type="button"
+          class="secondary-button"
+          (click)="goToActors()"
+        >
+          Actors
+        </button>
+
+        <button
+          type="button"
+          class="secondary-button"
+          (click)="logout()"
+          aria-label="Sign out"
+        >
+          Logout
+        </button>
 
       </div>
 
     </header>
 
+
+    <!-- GLOBAL MESSAGES -->
+
+    <div
+      *ngIf="errorMessage"
+      class="message error"
+      role="alert"
+      aria-live="assertive"
+    >
+      {{ errorMessage }}
+    </div>
+
+
+    <div
+      *ngIf="successMessage"
+      class="message success"
+      role="status"
+      aria-live="polite"
+    >
+      {{ successMessage }}
+    </div>
+
+
+    <!-- OMDb SEARCH -->
 
     <section class="search-section">
 
@@ -29,46 +98,26 @@
       <div class="search-box">
 
         <input
+          id="movie-search"
           type="text"
           [(ngModel)]="searchTitle"
           placeholder="Enter movie title..."
+          aria-label="Movie title"
           (keyup.enter)="searchMovie()"
         />
 
 
         <button
           class="primary-button"
+          type="button"
           (click)="searchMovie()"
-          [disabled]="loading"
         >
-
           {{
             loading
               ? 'Searching...'
               : 'Search'
           }}
-
         </button>
-
-      </div>
-
-
-      <div
-        *ngIf="errorMessage"
-        class="message error"
-      >
-
-        {{ errorMessage }}
-
-      </div>
-
-
-      <div
-        *ngIf="successMessage"
-        class="message success"
-      >
-
-        {{ successMessage }}
 
       </div>
 
@@ -77,7 +126,6 @@
         *ngIf="searchResult"
         class="search-result"
       >
-
 
         <img
           *ngIf="
@@ -91,20 +139,21 @@
 
         <div class="result-info">
 
+          <span class="content-type">
+            MOVIE
+          </span>
+
           <h3>
             {{ searchResult.Title }}
           </h3>
-
 
           <p>
             {{ searchResult.Year }}
           </p>
 
-
           <p>
             {{ searchResult.Genre }}
           </p>
-
 
           <p>
             <strong>
@@ -114,7 +163,6 @@
             {{ searchResult.imdbRating }}
           </p>
 
-
           <p>
             <strong>
               Director:
@@ -123,19 +171,23 @@
             {{ searchResult.Director }}
           </p>
 
-
           <p class="plot">
             {{ searchResult.Plot }}
           </p>
 
 
           <button
+            *ngIf="isAdmin"
             class="primary-button"
+            type="button"
             (click)="importMovie()"
+            [disabled]="adding"
           >
-
-            Add to Library
-
+            {{
+              adding
+                ? 'Adding...'
+                : 'Add to Library'
+            }}
           </button>
 
         </div>
@@ -145,18 +197,413 @@
     </section>
 
 
+    <!-- MANUAL CONTENT -->
+
+    <section
+      class="manual-section"
+      *ngIf="isAdmin"
+    >
+
+      <div class="manual-header">
+
+        <div>
+
+          <h2>
+            Add Content Manually
+          </h2>
+
+          <p>
+            Add a movie or series without using OMDb.
+          </p>
+
+        </div>
+
+
+        <button
+          class="secondary-button"
+          type="button"
+          (click)="toggleManualForm()"
+        >
+          {{
+            showManualForm
+              ? 'Close'
+              : 'Add Manually'
+          }}
+        </button>
+
+      </div>
+
+
+      <div
+        class="manual-form"
+        *ngIf="showManualForm"
+      >
+
+        <div class="manual-field">
+
+          <label for="manual-type">
+            Type
+          </label>
+
+          <select
+            id="manual-type"
+            [(ngModel)]="manualForm.type"
+          >
+            <option value="MOVIE">
+              Movie
+            </option>
+
+            <option value="SERIES">
+              Series
+            </option>
+          </select>
+
+        </div>
+
+
+        <div class="manual-field">
+
+          <label for="manual-title">
+            Title *
+          </label>
+
+          <input
+            id="manual-title"
+            type="text"
+            [(ngModel)]="manualForm.title"
+          />
+
+          <p
+            *ngIf="manualValidationErrors.title"
+            class="field-error"
+            role="alert"
+          >
+            {{ manualValidationErrors.title }}
+          </p>
+
+        </div>
+
+
+        <div class="manual-field">
+
+          <label for="manual-year">
+            Year
+          </label>
+
+          <input
+            id="manual-year"
+            type="number"
+            min="1888"
+            max="2100"
+            [(ngModel)]="manualForm.year"
+          />
+
+          <p
+            *ngIf="manualValidationErrors.year"
+            class="field-error"
+            role="alert"
+          >
+            {{ manualValidationErrors.year }}
+          </p>
+
+        </div>
+
+
+        <div class="manual-field">
+
+          <label for="manual-genre">
+            Genre
+          </label>
+
+          <input
+            id="manual-genre"
+            type="text"
+            [(ngModel)]="manualForm.genre"
+          />
+
+        </div>
+
+
+        <div class="manual-field">
+
+          <label for="manual-rating">
+            Rating
+          </label>
+
+          <input
+            id="manual-rating"
+            type="number"
+            min="0"
+            max="10"
+            step="0.1"
+            [(ngModel)]="manualForm.rating"
+          />
+
+          <p
+            *ngIf="manualValidationErrors.rating"
+            class="field-error"
+            role="alert"
+          >
+            {{ manualValidationErrors.rating }}
+          </p>
+
+        </div>
+
+
+        <div class="manual-field">
+
+          <label for="manual-director">
+            Director
+          </label>
+
+          <input
+            id="manual-director"
+            type="text"
+            [(ngModel)]="manualForm.director"
+          />
+
+        </div>
+
+
+        <div class="manual-field manual-wide">
+
+          <label for="manual-poster">
+            Poster URL
+          </label>
+
+          <input
+            id="manual-poster"
+            type="url"
+            [(ngModel)]="manualForm.poster"
+          />
+
+        </div>
+
+
+        <div class="manual-field manual-wide">
+
+          <label for="manual-plot">
+            Plot
+          </label>
+
+          <textarea
+            id="manual-plot"
+            [(ngModel)]="manualForm.plot"
+          ></textarea>
+
+        </div>
+
+
+        <div class="manual-actions">
+
+          <button
+            class="primary-button"
+            type="button"
+            (click)="createManualContent()"
+            [disabled]="manualSaving"
+          >
+            {{
+              manualSaving
+                ? 'Adding...'
+                : 'Add Content'
+            }}
+          </button>
+
+
+          <button
+            class="secondary-button"
+            type="button"
+            (click)="resetManualForm()"
+            [disabled]="manualSaving"
+          >
+            Clear
+          </button>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- SAVED CONTENT -->
 
     <section class="library">
 
       <div class="library-header">
 
         <h2>
-          Saved Movies
+          Saved Content
         </h2>
 
         <span class="count">
-          {{ contents.length }} movie(s)
+          {{ totalElements }} item(s)
         </span>
+
+      </div>
+
+
+      <!-- FILTERS -->
+
+      <div class="library-filters">
+
+        <div class="filter-field">
+
+          <label for="library-title">
+            Title
+          </label>
+
+          <input
+            id="library-title"
+            type="text"
+            [(ngModel)]="libraryTitle"
+            placeholder="Search saved content..."
+            (keyup.enter)="applyLibraryFilters()"
+          />
+
+        </div>
+
+
+        <div class="filter-field">
+
+          <label for="library-genre">
+            Genre
+          </label>
+
+          <input
+            id="library-genre"
+            type="text"
+            [(ngModel)]="libraryGenre"
+            placeholder="e.g. Drama"
+            (keyup.enter)="applyLibraryFilters()"
+          />
+
+        </div>
+
+
+        <div class="filter-field">
+
+          <label for="library-rating">
+            Min IMDb
+          </label>
+
+          <input
+            id="library-rating"
+            type="number"
+            min="0"
+            max="10"
+            step="0.1"
+            [(ngModel)]="libraryMinRating"
+            placeholder="0 - 10"
+          />
+
+        </div>
+
+
+        <div class="filter-field">
+
+          <label for="sort-by">
+            Sort by
+          </label>
+
+          <select
+            id="sort-by"
+            [(ngModel)]="sortBy"
+          >
+
+            <option value="createdAt">
+              Date Added
+            </option>
+
+            <option value="title">
+              Title
+            </option>
+
+            <option value="year">
+              Year
+            </option>
+
+            <option value="rating">
+              IMDb Rating
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="filter-field">
+
+          <label for="sort-direction">
+            Direction
+          </label>
+
+          <select
+            id="sort-direction"
+            [(ngModel)]="sortDir"
+          >
+
+            <option value="desc">
+              Descending
+            </option>
+
+            <option value="asc">
+              Ascending
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="filter-field">
+
+          <label for="page-size">
+            Per page
+          </label>
+
+          <select
+            id="page-size"
+            [(ngModel)]="pageSize"
+          >
+
+            <option [ngValue]="4">
+              4
+            </option>
+
+            <option [ngValue]="8">
+              8
+            </option>
+
+            <option [ngValue]="12">
+              12
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div class="filter-actions">
+
+          <button
+            class="primary-button"
+            type="button"
+            (click)="applyLibraryFilters()"
+          >
+            Apply
+          </button>
+
+
+          <button
+            class="secondary-button"
+            type="button"
+            (click)="clearLibraryFilters()"
+          >
+            Clear
+          </button>
+
+        </div>
 
       </div>
 
@@ -165,20 +612,18 @@
         *ngIf="contents.length === 0"
         class="empty-state"
       >
-
-        No movies saved yet.
-
+        No content found.
       </div>
 
 
-      <div class="movie-grid">
+      <!-- CARDS -->
 
+      <div class="movie-grid">
 
         <article
           *ngFor="let movie of contents"
           class="movie-card"
         >
-
 
           <img
             *ngIf="
@@ -196,6 +641,19 @@
               editingId !== movie.id
             "
           >
+
+            <span
+              class="content-type"
+              [class.series]="
+                movie.type === 'SERIES'
+              "
+            >
+              {{
+                movie.type === 'SERIES'
+                  ? 'SERIES'
+                  : 'MOVIE'
+              }}
+            </span>
 
 
             <h3>
@@ -240,138 +698,267 @@
             </p>
 
 
-            <div class="actions">
-
+            <div
+              class="actions"
+              *ngIf="isAdmin"
+            >
 
               <button
                 class="edit-button"
+                type="button"
                 (click)="startEdit(movie)"
               >
-
                 Edit
-
               </button>
 
 
               <button
                 class="delete-button"
+                type="button"
                 (click)="deleteMovie(movie.id)"
+                [disabled]="isDeleting(movie.id)"
               >
-
-                Delete
-
+                {{
+                  isDeleting(movie.id)
+                    ? 'Deleting...'
+                    : 'Delete'
+                }}
               </button>
-
 
             </div>
 
           </div>
 
 
+          <!-- EDIT -->
 
           <div
             class="movie-info edit-form"
             *ngIf="
+              isAdmin &&
               editingId === movie.id &&
               editForm
             "
           >
 
-
             <h3>
-              Edit Movie
+              Edit Content
             </h3>
 
 
-            <label>
+            <label
+              [for]="'edit-type-' + movie.id"
+            >
+              Type
+            </label>
+
+            <select
+              [id]="'edit-type-' + movie.id"
+              [(ngModel)]="editForm.type"
+            >
+
+              <option value="MOVIE">
+                Movie
+              </option>
+
+              <option value="SERIES">
+                Series
+              </option>
+
+            </select>
+
+
+            <label
+              [for]="'edit-title-' + movie.id"
+            >
               Title
             </label>
 
             <input
+              [id]="'edit-title-' + movie.id"
               [(ngModel)]="editForm.title"
               type="text"
             />
 
 
-            <label>
+            <p
+              *ngIf="editValidationErrors.title"
+              class="field-error"
+              role="alert"
+            >
+              {{ editValidationErrors.title }}
+            </p>
+
+
+            <label
+              [for]="'edit-year-' + movie.id"
+            >
               Year
             </label>
 
             <input
+              [id]="'edit-year-' + movie.id"
               [(ngModel)]="editForm.year"
               type="number"
+              min="1888"
+              max="2100"
             />
 
 
-            <label>
+            <p
+              *ngIf="editValidationErrors.year"
+              class="field-error"
+              role="alert"
+            >
+              {{ editValidationErrors.year }}
+            </p>
+
+
+            <label
+              [for]="'edit-genre-' + movie.id"
+            >
               Genre
             </label>
 
             <input
+              [id]="'edit-genre-' + movie.id"
               [(ngModel)]="editForm.genre"
               type="text"
             />
 
 
-            <label>
+            <label
+              [for]="'edit-rating-' + movie.id"
+            >
               Rating
             </label>
 
             <input
+              [id]="'edit-rating-' + movie.id"
               [(ngModel)]="editForm.rating"
               type="number"
+              min="0"
+              max="10"
               step="0.1"
             />
 
 
-            <label>
+            <p
+              *ngIf="editValidationErrors.rating"
+              class="field-error"
+              role="alert"
+            >
+              {{ editValidationErrors.rating }}
+            </p>
+
+
+            <label
+              [for]="'edit-director-' + movie.id"
+            >
               Director
             </label>
 
             <input
+              [id]="'edit-director-' + movie.id"
               [(ngModel)]="editForm.director"
               type="text"
             />
 
 
-            <label>
+            <label
+              [for]="'edit-poster-' + movie.id"
+            >
+              Poster URL
+            </label>
+
+            <input
+              [id]="'edit-poster-' + movie.id"
+              [(ngModel)]="editForm.poster"
+              type="url"
+            />
+
+
+            <label
+              [for]="'edit-plot-' + movie.id"
+            >
               Plot
             </label>
 
             <textarea
+              [id]="'edit-plot-' + movie.id"
               [(ngModel)]="editForm.plot"
-            >
-            </textarea>
+            ></textarea>
 
 
             <div class="actions">
 
-
               <button
                 class="save-button"
+                type="button"
                 (click)="saveEdit()"
+                [disabled]="isSavingEdit(movie.id)"
               >
-
-                Save
-
+                {{
+                  isSavingEdit(movie.id)
+                    ? 'Saving...'
+                    : 'Save'
+                }}
               </button>
 
 
               <button
                 class="cancel-button"
+                type="button"
                 (click)="cancelEdit()"
               >
-
                 Cancel
-
               </button>
-
 
             </div>
 
           </div>
 
         </article>
+
+      </div>
+
+
+      <!-- PAGINATION -->
+
+      <div
+        class="pagination"
+        *ngIf="totalElements > 0"
+      >
+
+        <button
+          class="secondary-button"
+          type="button"
+          (click)="previousPage()"
+          [disabled]="currentPage === 0"
+        >
+          Previous
+        </button>
+
+
+        <span>
+          Page
+          {{ displayedPage }}
+          /
+          {{ totalPages }}
+        </span>
+
+
+        <button
+          class="secondary-button"
+          type="button"
+          (click)="nextPage()"
+          [disabled]="
+            currentPage >=
+            totalPages - 1
+          "
+        >
+          Next
+        </button>
 
       </div>
 

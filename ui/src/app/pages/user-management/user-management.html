@@ -1,0 +1,317 @@
+<div class="page">
+
+  <div class="container">
+
+    <header class="header">
+
+      <div>
+
+        <h1>
+          User Management
+        </h1>
+
+        <p>
+          Manage account roles and access.
+        </p>
+
+      </div>
+
+
+      <div class="header-actions">
+
+        <div class="account">
+
+          <strong>
+            {{ currentEmail }}
+          </strong>
+
+          <span>
+            {{ currentRole }}
+          </span>
+
+        </div>
+
+
+        <button
+          type="button"
+          class="secondary"
+          (click)="goToMovies()"
+        >
+          Content
+        </button>
+
+
+        <button
+          type="button"
+          class="secondary"
+          (click)="goToCategories()"
+        >
+          Categories
+        </button>
+
+
+        <button
+          type="button"
+          class="secondary"
+          (click)="goToActors()"
+        >
+          Actors
+        </button>
+
+
+        <button
+          type="button"
+          class="secondary"
+          (click)="logout()"
+        >
+          Logout
+        </button>
+
+      </div>
+
+    </header>
+
+
+    <div
+      *ngIf="errorMessage"
+      class="message error"
+      role="alert"
+      aria-live="assertive"
+    >
+      {{ errorMessage }}
+    </div>
+
+
+    <div
+      *ngIf="successMessage"
+      class="message success"
+      role="status"
+      aria-live="polite"
+    >
+      {{ successMessage }}
+    </div>
+
+
+    <section class="panel">
+
+      <div class="panel-header">
+
+        <div>
+
+          <h2>
+            Users
+          </h2>
+
+          <p>
+            {{ users.length }}
+            registered users
+          </p>
+
+        </div>
+
+
+        <button
+          type="button"
+          class="secondary"
+          (click)="loadUsers()"
+          [disabled]="loading"
+        >
+          {{
+            loading
+              ? 'Loading...'
+              : 'Refresh'
+          }}
+        </button>
+
+      </div>
+
+
+      <p
+        *ngIf="
+          !loading &&
+          users.length === 0
+        "
+        class="empty"
+      >
+        No users found.
+      </p>
+
+
+      <div
+        *ngIf="users.length > 0"
+        class="table-wrapper"
+      >
+
+        <table>
+
+          <thead>
+
+          <tr>
+
+            <th>
+              User
+            </th>
+
+            <th>
+              Role
+            </th>
+
+            <th>
+              Status
+            </th>
+
+            <th>
+              Created
+            </th>
+
+            <th>
+              Action
+            </th>
+
+          </tr>
+
+          </thead>
+
+
+          <tbody>
+
+          <tr
+            *ngFor="let user of users"
+          >
+
+            <td>
+
+              <div class="user-email">
+
+                <strong>
+                  {{ user.email }}
+                </strong>
+
+                <span
+                  *ngIf="isSelf(user)"
+                  class="you-badge"
+                >
+                    You
+                  </span>
+
+              </div>
+
+            </td>
+
+
+            <td>
+
+              <select
+                [ngModel]="user.role"
+                (ngModelChange)="
+                    changeRole(
+                      user,
+                      $event
+                    )
+                  "
+                [disabled]="
+                    isUpdating(user.id) ||
+                    isSelf(user)
+                  "
+                [attr.aria-label]="
+                    'Role for ' +
+                    user.email
+                  "
+              >
+
+                <option
+                  value="USER"
+                >
+                  USER
+                </option>
+
+                <option
+                  value="ADMIN"
+                >
+                  ADMIN
+                </option>
+
+              </select>
+
+            </td>
+
+
+            <td>
+
+                <span
+                  class="status"
+                  [class.active]="user.enabled"
+                  [class.disabled]="!user.enabled"
+                >
+
+                  {{
+                    user.enabled
+                      ? 'Active'
+                      : 'Disabled'
+                  }}
+
+                </span>
+
+            </td>
+
+
+            <td>
+
+              {{
+                user.createdAt
+                  | date:
+                  'mediumDate'
+              }}
+
+            </td>
+
+
+            <td>
+
+              <button
+                type="button"
+                [class.disable-button]="user.enabled"
+                [class.enable-button]="!user.enabled"
+                (click)="toggleEnabled(user)"
+                [disabled]="
+                    isUpdating(user.id) ||
+                    isSelf(user)
+                  "
+              >
+
+                <ng-container
+                  *ngIf="!isUpdating(user.id)"
+                >
+
+                  {{
+                    user.enabled
+                      ? 'Disable'
+                      : 'Enable'
+                  }}
+
+                </ng-container>
+
+
+                <ng-container
+                  *ngIf="isUpdating(user.id)"
+                >
+                  Saving...
+                </ng-container>
+
+              </button>
+
+            </td>
+
+          </tr>
+
+          </tbody>
+
+        </table>
+
+      </div>
+
+    </section>
+
+  </div>
+
+</div>
