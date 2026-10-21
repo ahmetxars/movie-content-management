@@ -15,7 +15,9 @@ import java.time.LocalDateTime;
 public class ContentEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(
+            strategy = GenerationType.IDENTITY
+    )
     private Long id;
 
     @Column(nullable = false)
@@ -35,10 +37,24 @@ public class ContentEntity {
 
     private String director;
 
+    @Version
+    @Column(nullable = false)
+    private Long version;
+
+    @Column(
+            name = "created_at",
+            nullable = false,
+            updatable = false
+    )
     private LocalDateTime createdAt;
+
 
     @PrePersist
     public void prePersist() {
-        createdAt = LocalDateTime.now();
+
+        createdAt =
+                LocalDateTime.now();
+
     }
+
 }
