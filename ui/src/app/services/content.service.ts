@@ -1,31 +1,16 @@
-import {
-  Injectable
-} from '@angular/core';
-
+import { Injectable } from '@angular/core';
 import {
   HttpClient,
   HttpParams
 } from '@angular/common/http';
 
-import {
-  Observable
-} from 'rxjs';
+import { Observable } from 'rxjs';
 
-import {
-  environment
-} from '../../environments/environment';
+import { environment } from '../../environments/environment';
 
-import {
-  Content
-} from '../models/content.model';
-
-import {
-  ContentPage
-} from '../models/content-page.model';
-
-import {
-  OmdbMovie
-} from '../models/omdb-movie.model';
+import { Content } from '../models/content.model';
+import { ContentPage } from '../models/content-page.model';
+import { OmdbMovie } from '../models/omdb-movie.model';
 
 
 @Injectable({
@@ -64,32 +49,26 @@ export class ContentService {
 
     let params =
       new HttpParams()
-
         .set(
           'title',
           title
         )
-
         .set(
           'genre',
           genre
         )
-
         .set(
           'page',
           page
         )
-
         .set(
           'size',
           size
         )
-
         .set(
           'sortBy',
           sortBy
         )
-
         .set(
           'sortDir',
           sortDir
@@ -140,8 +119,17 @@ export class ContentService {
       id,
       createdAt,
       version,
-      ...payload
+      ...rest
     } = content;
+
+
+    const payload = {
+      ...rest,
+
+      type:
+        content.type ??
+        'MOVIE'
+    };
 
 
     return this.http
@@ -161,8 +149,17 @@ export class ContentService {
     const {
       id: ignoredId,
       createdAt,
-      ...payload
+      ...rest
     } = content;
+
+
+    const payload = {
+      ...rest,
+
+      type:
+        content.type ??
+        'MOVIE'
+    };
 
 
     return this.http

@@ -61,41 +61,102 @@ import {
     FormsModule
   ],
 
-  templateUrl: './movie-list.html',
+  templateUrl:
+    './movie-list.html',
 
-  styleUrl: './movie-list.scss'
+  styleUrl:
+    './movie-list.scss'
 })
-export class MovieList implements OnInit, OnDestroy {
+export class MovieList
+  implements OnInit, OnDestroy {
 
   contents: Content[] = [];
 
+
+  /*
+   * OMDb search
+   */
+
   searchTitle = '';
 
-  searchResult?: OmdbMovie;
+  searchResult?:
+    OmdbMovie;
 
   loading = false;
 
   adding = false;
 
+
+  /*
+   * Global messages
+   */
+
   errorMessage = '';
 
   successMessage = '';
 
-  editingId?: number;
 
-  editForm?: Content;
+  /*
+   * Manual content form
+   */
+
+  showManualForm =
+    false;
+
+  manualSaving =
+    false;
+
+  manualForm:
+    Content =
+    this.createEmptyManualForm();
+
+  manualValidationErrors = {
+    title: '',
+    year: '',
+    rating: ''
+  };
 
 
-  // Saved movie filters
+  /*
+   * Edit state
+   */
+
+  editingId?:
+    number;
+
+  editForm?:
+    Content;
+
+  deletingIds =
+    new Set<number>();
+
+  savingEditIds =
+    new Set<number>();
+
+  editValidationErrors = {
+    title: '',
+    year: '',
+    rating: ''
+  };
+
+
+  /*
+   * Saved content filters
+   */
+
   libraryTitle = '';
 
   libraryGenre = '';
 
-  libraryMinRating: number | null = null;
+  libraryMinRating:
+    number | null =
+    null;
 
-  sortBy = 'createdAt';
+  sortBy =
+    'createdAt';
 
-  sortDir = 'desc';
+  sortDir =
+    'desc';
 
   pageSize = 4;
 
@@ -106,38 +167,9 @@ export class MovieList implements OnInit, OnDestroy {
   totalElements = 0;
 
 
-  deletingIds =
-    new Set<number>();
-
-  savingEditIds =
-    new Set<number>();
-
-
-  editValidationErrors = {
-    title: '',
-    year: '',
-    rating: ''
-  };
-
-  get currentEmail(): string {
-
-    return (
-      this.authService.getEmail() ??
-      ''
-    );
-
-  }
-
-
-  get currentRole(): string {
-
-    return (
-      this.authService.getRole() ??
-      ''
-    );
-
-  }
-
+  /*
+   * OMDb search race protection
+   */
 
   private searchSubject =
     new Subject<string>();
@@ -149,10 +181,17 @@ export class MovieList implements OnInit, OnDestroy {
 
 
   constructor(
-    private contentService: ContentService,
-    private authService: AuthService,
-    private changeDetectorRef: ChangeDetectorRef,
-  private router: Router
+    private contentService:
+    ContentService,
+
+    private authService:
+    AuthService,
+
+    private changeDetectorRef:
+    ChangeDetectorRef,
+
+    private router:
+    Router
   ) {}
 
 
@@ -160,90 +199,116 @@ export class MovieList implements OnInit, OnDestroy {
 
     this.loadContents();
 
+
     this.searchSubscription =
       this.searchSubject
         .pipe(
 
           debounceTime(250),
 
-          switchMap((title) => {
+          switchMap(
+            (title) => {
 
-            const searchId =
-              ++this.searchSequence;
+              const searchId =
+                ++this.searchSequence;
 
-            this.loading = true;
 
-            this.errorMessage = '';
+              this.loading =
+                true;
 
-            this.successMessage = '';
+              this.errorMessage =
+                '';
+
+              this.successMessage =
+                '';
+
+              this.searchResult =
+                undefined;
+
+
+              this.changeDetectorRef
+                .markForCheck();
+
+
+              return this
+                .contentService
+                .searchMovie(
+                  title
+                )
+                .pipe(
+
+                  catchError(
+                    (
+                      error:
+                      HttpErrorResponse
+                    ) => {
+
+                      if (
+                        searchId ===
+                        this.searchSequence
+                      ) {
+
+                        this.errorMessage =
+                          this
+                            .getSearchErrorMessage(
+                              error
+                            );
+
+                        this.searchResult =
+                          undefined;
+
+
+                        this.changeDetectorRef
+                          .markForCheck();
+
+                      }
+
+
+                      return EMPTY;
+
+                    }
+                  ),
+
+                  finalize(
+                    () => {
+
+                      if (
+                        searchId ===
+                        this.searchSequence
+                      ) {
+
+                        this.loading =
+                          false;
+
+                        this.changeDetectorRef
+                          .markForCheck();
+
+                      }
+
+                    }
+                  )
+
+                );
+
+            }
+          )
+
+        )
+        .subscribe(
+          (movie) => {
 
             this.searchResult =
-              undefined;
+              movie;
+
+            this.errorMessage =
+              '';
+
 
             this.changeDetectorRef
               .markForCheck();
 
-
-            return this.contentService
-              .searchMovie(title)
-              .pipe(
-
-                catchError(
-                  (error: HttpErrorResponse) => {
-
-                    if (
-                      searchId ===
-                      this.searchSequence
-                    ) {
-
-                      this.errorMessage =
-                        this.getSearchErrorMessage(
-                          error
-                        );
-
-                      this.searchResult =
-                        undefined;
-
-                      this.changeDetectorRef
-                        .markForCheck();
-                    }
-
-                    return EMPTY;
-                  }
-                ),
-
-                finalize(() => {
-
-                  if (
-                    searchId ===
-                    this.searchSequence
-                  ) {
-
-                    this.loading =
-                      false;
-
-                    this.changeDetectorRef
-                      .markForCheck();
-                  }
-
-                })
-
-              );
-
-          })
-
-        )
-        .subscribe((movie) => {
-
-          this.searchResult =
-            movie;
-
-          this.errorMessage = '';
-
-          this.changeDetectorRef
-            .markForCheck();
-
-        });
+          }
+        );
 
   }
 
@@ -264,7 +329,32 @@ export class MovieList implements OnInit, OnDestroy {
   }
 
 
-  get displayedPage(): number {
+  get currentEmail():
+    string {
+
+    return (
+      this.authService
+        .getEmail() ??
+      ''
+    );
+
+  }
+
+
+  get currentRole():
+    string {
+
+    return (
+      this.authService
+        .getRole() ??
+      ''
+    );
+
+  }
+
+
+  get displayedPage():
+    number {
 
     if (
       this.totalPages === 0
@@ -274,19 +364,29 @@ export class MovieList implements OnInit, OnDestroy {
 
     }
 
-    return this.currentPage + 1;
+
+    return (
+      this.currentPage +
+      1
+    );
 
   }
 
+
+  /*
+   * Library
+   */
 
   loadContents(): void {
 
     this.contentService
       .getContentsPage(
 
-        this.libraryTitle.trim(),
+        this.libraryTitle
+          .trim(),
 
-        this.libraryGenre.trim(),
+        this.libraryGenre
+          .trim(),
 
         this.libraryMinRating,
 
@@ -301,7 +401,9 @@ export class MovieList implements OnInit, OnDestroy {
       )
       .subscribe({
 
-        next: (data) => {
+        next: (
+          data
+        ) => {
 
           this.contents =
             data.content;
@@ -317,8 +419,8 @@ export class MovieList implements OnInit, OnDestroy {
 
 
           /*
-           * Örneğin son sayfadaki tek filmi
-           * sildiysek boş sayfada kalmayalım.
+           * Last item on a page
+           * may have been deleted.
            */
           if (
             this.contents.length === 0 &&
@@ -340,15 +442,19 @@ export class MovieList implements OnInit, OnDestroy {
 
         },
 
+
         error: (
-          error: HttpErrorResponse
+          error:
+          HttpErrorResponse
         ) => {
 
           this.errorMessage =
-            this.getGeneralErrorMessage(
-              error,
-              'Saved movies could not be loaded.'
-            );
+            this
+              .getGeneralErrorMessage(
+                error,
+                'Saved content could not be loaded.'
+              );
+
 
           this.changeDetectorRef
             .markForCheck();
@@ -360,56 +466,62 @@ export class MovieList implements OnInit, OnDestroy {
   }
 
 
-  applyLibraryFilters(): void {
+  applyLibraryFilters():
+    void {
 
-    this.currentPage = 0;
+    this.currentPage =
+      0;
 
-    this.errorMessage = '';
+    this.errorMessage =
+      '';
 
-    this.successMessage = '';
-
-    this.loadContents();
-
-  }
-
-  logout(): void {
-
-    this.authService.logout();
-
-    this.router.navigate([
-      '/login'
-    ]);
-
-  }
-
-
-  clearLibraryFilters(): void {
-
-    this.libraryTitle = '';
-
-    this.libraryGenre = '';
-
-    this.libraryMinRating = null;
-
-    this.sortBy = 'createdAt';
-
-    this.sortDir = 'desc';
-
-    this.pageSize = 4;
-
-    this.currentPage = 0;
+    this.successMessage =
+      '';
 
     this.loadContents();
 
   }
 
 
-  previousPage(): void {
+  clearLibraryFilters():
+    void {
+
+    this.libraryTitle =
+      '';
+
+    this.libraryGenre =
+      '';
+
+    this.libraryMinRating =
+      null;
+
+    this.sortBy =
+      'createdAt';
+
+    this.sortDir =
+      'desc';
+
+    this.pageSize =
+      4;
+
+    this.currentPage =
+      0;
+
+
+    this.loadContents();
+
+  }
+
+
+  previousPage():
+    void {
 
     if (
       this.currentPage <= 0
     ) {
+
       return;
+
     }
 
 
@@ -420,13 +532,16 @@ export class MovieList implements OnInit, OnDestroy {
   }
 
 
-  nextPage(): void {
+  nextPage():
+    void {
 
     if (
       this.currentPage >=
       this.totalPages - 1
     ) {
+
       return;
+
     }
 
 
@@ -437,10 +552,46 @@ export class MovieList implements OnInit, OnDestroy {
   }
 
 
+  /*
+   * Account
+   */
+  goToActors(): void {
+
+    this.router.navigate([
+      '/actors'
+    ]);
+  }
+
+  goToCategories(): void {
+
+    this.router.navigate([
+      '/categories'
+    ]);
+  }
+
+  logout(): void {
+
+    this.authService
+      .logout();
+
+
+    this.router
+      .navigate([
+        '/login'
+      ]);
+
+  }
+
+
+  /*
+   * OMDb
+   */
+
   searchMovie(): void {
 
     const title =
-      this.searchTitle.trim();
+      this.searchTitle
+        .trim();
 
 
     if (!title) {
@@ -454,7 +605,9 @@ export class MovieList implements OnInit, OnDestroy {
 
 
     this.searchSubject
-      .next(title);
+      .next(
+        title
+      );
 
   }
 
@@ -466,37 +619,49 @@ export class MovieList implements OnInit, OnDestroy {
       this.adding ||
       !this.isAdmin
     ) {
+
       return;
+
     }
 
 
     const movieTitle =
-      this.searchResult.Title;
+      this.searchResult
+        .Title;
 
 
-    this.adding = true;
+    this.adding =
+      true;
 
-    this.errorMessage = '';
+    this.errorMessage =
+      '';
 
-    this.successMessage = '';
+    this.successMessage =
+      '';
+
 
     this.changeDetectorRef
       .markForCheck();
 
 
     this.contentService
-      .importMovie(movieTitle)
+      .importMovie(
+        movieTitle
+      )
       .pipe(
 
-        finalize(() => {
+        finalize(
+          () => {
 
-          this.adding =
-            false;
+            this.adding =
+              false;
 
-          this.changeDetectorRef
-            .markForCheck();
 
-        })
+            this.changeDetectorRef
+              .markForCheck();
+
+          }
+        )
 
       )
       .subscribe({
@@ -506,11 +671,13 @@ export class MovieList implements OnInit, OnDestroy {
           this.successMessage =
             'Movie added successfully.';
 
-          this.errorMessage = '';
+          this.errorMessage =
+            '';
 
 
           if (
-            this.searchResult?.Title ===
+            this.searchResult
+              ?.Title ===
             movieTitle
           ) {
 
@@ -523,29 +690,36 @@ export class MovieList implements OnInit, OnDestroy {
           }
 
 
-          this.currentPage = 0;
+          this.currentPage =
+            0;
 
           this.loadContents();
+
 
           this.changeDetectorRef
             .markForCheck();
 
         },
 
+
         error: (
-          error: HttpErrorResponse
+          error:
+          HttpErrorResponse
         ) => {
 
           if (
-            error.status === 409
+            error.status ===
+            409
           ) {
 
             this.errorMessage =
-              error.error?.message ??
+              error.error
+                ?.message ??
               'This movie is already in your library.';
 
           } else if (
-            error.status === 403
+            error.status ===
+            403
           ) {
 
             this.errorMessage =
@@ -554,10 +728,11 @@ export class MovieList implements OnInit, OnDestroy {
           } else {
 
             this.errorMessage =
-              this.getGeneralErrorMessage(
-                error,
-                'Movie could not be added.'
-              );
+              this
+                .getGeneralErrorMessage(
+                  error,
+                  'Movie could not be added.'
+                );
 
           }
 
@@ -572,54 +747,124 @@ export class MovieList implements OnInit, OnDestroy {
   }
 
 
-  deleteMovie(
-    id?: number
-  ): void {
+  /*
+   * Manual content
+   */
+
+  toggleManualForm():
+    void {
 
     if (
-      id === undefined ||
-      this.deletingIds.has(id) ||
       !this.isAdmin
     ) {
+
       return;
+
     }
 
 
-    const confirmed =
-      window.confirm(
-        'Are you sure you want to delete this movie?'
-      );
+    this.showManualForm =
+      !this.showManualForm;
+
+    this.errorMessage =
+      '';
+
+    this.successMessage =
+      '';
+
+  }
 
 
-    if (!confirmed) {
+  resetManualForm():
+    void {
+
+    this.manualForm =
+      this
+        .createEmptyManualForm();
+
+
+    this.manualValidationErrors = {
+      title: '',
+      year: '',
+      rating: ''
+    };
+
+  }
+
+
+  createManualContent():
+    void {
+
+    if (
+      !this.isAdmin ||
+      this.manualSaving
+    ) {
+
       return;
+
     }
 
 
-    this.deletingIds
-      .add(id);
+    if (
+      !this
+        .validateManualForm()
+    ) {
 
-    this.errorMessage = '';
+      return;
 
-    this.successMessage = '';
+    }
+
+
+    const payload:
+      Content = {
+
+      ...this.manualForm,
+
+      title:
+        this.manualForm
+          .title
+          .trim(),
+
+      type:
+        this.manualForm
+          .type ??
+        'MOVIE'
+
+    };
+
+
+    this.manualSaving =
+      true;
+
+    this.errorMessage =
+      '';
+
+    this.successMessage =
+      '';
+
 
     this.changeDetectorRef
       .markForCheck();
 
 
     this.contentService
-      .deleteContent(id)
+      .createContent(
+        payload
+      )
       .pipe(
 
-        finalize(() => {
+        finalize(
+          () => {
 
-          this.deletingIds
-            .delete(id);
+            this.manualSaving =
+              false;
 
-          this.changeDetectorRef
-            .markForCheck();
 
-        })
+            this.changeDetectorRef
+              .markForCheck();
+
+          }
+        )
 
       )
       .subscribe({
@@ -627,26 +872,72 @@ export class MovieList implements OnInit, OnDestroy {
         next: () => {
 
           this.successMessage =
-            'Movie deleted successfully.';
+            'Content added successfully.';
 
-          this.errorMessage = '';
+          this.errorMessage =
+            '';
+
+          this.resetManualForm();
+
+          this.showManualForm =
+            false;
+
+          this.currentPage =
+            0;
 
           this.loadContents();
+
 
           this.changeDetectorRef
             .markForCheck();
 
         },
 
+
         error: (
-          error: HttpErrorResponse
+          error:
+          HttpErrorResponse
         ) => {
 
-          this.errorMessage =
-            this.getGeneralErrorMessage(
-              error,
-              'Movie could not be deleted.'
-            );
+          if (
+            error.status ===
+            409
+          ) {
+
+            this.errorMessage =
+              error.error
+                ?.message ??
+              'This content already exists.';
+
+          } else if (
+            error.status ===
+            403
+          ) {
+
+            this.errorMessage =
+              'You do not have permission to add content.';
+
+          } else if (
+            error.status ===
+            400
+          ) {
+
+            this.errorMessage =
+              error.error
+                ?.message ??
+              'Please check the entered values.';
+
+          } else {
+
+            this.errorMessage =
+              this
+                .getGeneralErrorMessage(
+                  error,
+                  'Content could not be added.'
+                );
+
+          }
+
 
           this.changeDetectorRef
             .markForCheck();
@@ -658,62 +949,28 @@ export class MovieList implements OnInit, OnDestroy {
   }
 
 
-  startEdit(
-    movie: Content
-  ): void {
+  private createEmptyManualForm():
+    Content {
 
-    if (!this.isAdmin) {
-      return;
-    }
-
-
-    this.editingId =
-      movie.id;
-
-    this.editForm = {
-      ...movie
-    };
-
-
-    this.editValidationErrors = {
+    return {
       title: '',
-      year: '',
-      rating: ''
-    };
-
-
-    this.errorMessage = '';
-
-    this.successMessage = '';
-
-  }
-
-
-  cancelEdit(): void {
-
-    this.editingId =
-      undefined;
-
-    this.editForm =
-      undefined;
-
-    this.editValidationErrors = {
-      title: '',
-      year: '',
-      rating: ''
+      year: null,
+      genre: '',
+      rating: null,
+      plot: '',
+      poster: '',
+      director: '',
+      type: 'MOVIE',
+      version: 0
     };
 
   }
 
 
-  private validateEditForm(): boolean {
+  private validateManualForm():
+    boolean {
 
-    if (!this.editForm) {
-      return false;
-    }
-
-
-    this.editValidationErrors = {
+    this.manualValidationErrors = {
       title: '',
       year: '',
       rating: ''
@@ -721,19 +978,24 @@ export class MovieList implements OnInit, OnDestroy {
 
 
     const title =
-      this.editForm.title
-        ?.trim() ?? '';
+      this.manualForm
+        .title
+        ?.trim() ??
+      '';
 
     const year =
-      this.editForm.year;
+      this.manualForm
+        .year;
 
     const rating =
-      this.editForm.rating;
+      this.manualForm
+        .rating;
 
 
     if (!title) {
 
-      this.editValidationErrors.title =
+      this.manualValidationErrors
+        .title =
         'Title is required.';
 
     }
@@ -748,7 +1010,8 @@ export class MovieList implements OnInit, OnDestroy {
       )
     ) {
 
-      this.editValidationErrors.year =
+      this.manualValidationErrors
+        .year =
         'Year must be between 1888 and 2100.';
 
     }
@@ -763,161 +1026,128 @@ export class MovieList implements OnInit, OnDestroy {
       )
     ) {
 
-      this.editValidationErrors.rating =
+      this.manualValidationErrors
+        .rating =
         'Rating must be between 0 and 10.';
 
     }
 
 
     return (
-      !this.editValidationErrors.title &&
-      !this.editValidationErrors.year &&
-      !this.editValidationErrors.rating
+      !this.manualValidationErrors
+        .title &&
+      !this.manualValidationErrors
+        .year &&
+      !this.manualValidationErrors
+        .rating
     );
 
   }
 
 
-  saveEdit(): void {
+  /*
+   * Delete
+   */
+
+  deleteMovie(
+    id?: number
+  ): void {
 
     if (
-      this.editingId === undefined ||
-      !this.editForm ||
+      id === undefined ||
+      this.deletingIds
+        .has(id) ||
       !this.isAdmin
     ) {
+
       return;
+
     }
+
+
+    const confirmed =
+      window.confirm(
+        'Are you sure you want to delete this content?'
+      );
 
 
     if (
-      !this.validateEditForm()
+      !confirmed
     ) {
+
       return;
+
     }
 
 
-    const movieId =
-      this.editingId;
+    this.deletingIds
+      .add(
+        id
+      );
 
+    this.errorMessage =
+      '';
 
-    if (
-      this.savingEditIds.has(
-        movieId
-      )
-    ) {
-      return;
-    }
+    this.successMessage =
+      '';
 
-
-    const payload: Content = {
-
-      ...this.editForm,
-
-      title:
-        this.editForm
-          .title
-          .trim()
-
-    };
-
-
-    this.savingEditIds
-      .add(movieId);
-
-    this.errorMessage = '';
-
-    this.successMessage = '';
 
     this.changeDetectorRef
       .markForCheck();
 
 
     this.contentService
-      .updateContent(
-        movieId,
-        payload
+      .deleteContent(
+        id
       )
       .pipe(
 
-        finalize(() => {
+        finalize(
+          () => {
 
-          this.savingEditIds
-            .delete(movieId);
+            this.deletingIds
+              .delete(
+                id
+              );
 
-          this.changeDetectorRef
-            .markForCheck();
 
-        })
+            this.changeDetectorRef
+              .markForCheck();
+
+          }
+        )
 
       )
       .subscribe({
 
-        next: (updatedMovie) => {
-
-          this.contents =
-            this.contents.map(
-              movie =>
-                movie.id === movieId
-                  ? updatedMovie
-                  : movie
-            );
-
-
-          if (
-            this.editingId ===
-            movieId
-          ) {
-
-            this.cancelEdit();
-
-          }
-
+        next: () => {
 
           this.successMessage =
-            'Movie updated successfully.';
+            'Content deleted successfully.';
 
-          this.errorMessage = '';
+          this.errorMessage =
+            '';
+
+          this.loadContents();
+
 
           this.changeDetectorRef
             .markForCheck();
 
         },
 
+
         error: (
-          error: HttpErrorResponse
+          error:
+          HttpErrorResponse
         ) => {
 
-          if (
-            error.status === 409
-          ) {
-
-            this.errorMessage =
-              error.error?.message ??
-              'This movie was changed by another user. Reload and try again.';
-
-          } else if (
-            error.status === 400
-          ) {
-
-            this.errorMessage =
-              'Please check the movie information.';
-
-          } else if (
-            error.status === 403
-          ) {
-
-            this.errorMessage =
-              'You do not have permission to edit movies.';
-
-          } else {
-
-            this.errorMessage =
-              this.getGeneralErrorMessage(
+          this.errorMessage =
+            this
+              .getGeneralErrorMessage(
                 error,
-                'Movie could not be updated.'
+                'Content could not be deleted.'
               );
-
-          }
 
 
           this.changeDetectorRef
@@ -936,8 +1166,365 @@ export class MovieList implements OnInit, OnDestroy {
 
     return (
       id !== undefined &&
-      this.deletingIds.has(id)
+      this.deletingIds
+        .has(id)
     );
+
+  }
+
+
+  /*
+   * Edit
+   */
+
+  startEdit(
+    movie:
+    Content
+  ): void {
+
+    if (
+      !this.isAdmin
+    ) {
+
+      return;
+
+    }
+
+
+    this.editingId =
+      movie.id;
+
+
+    this.editForm = {
+
+      ...movie,
+
+      type:
+        movie.type ??
+        'MOVIE'
+
+    };
+
+
+    this.editValidationErrors = {
+      title: '',
+      year: '',
+      rating: ''
+    };
+
+
+    this.errorMessage =
+      '';
+
+    this.successMessage =
+      '';
+
+  }
+
+
+  cancelEdit():
+    void {
+
+    this.editingId =
+      undefined;
+
+    this.editForm =
+      undefined;
+
+
+    this.editValidationErrors = {
+      title: '',
+      year: '',
+      rating: ''
+    };
+
+  }
+
+
+  private validateEditForm():
+    boolean {
+
+    if (
+      !this.editForm
+    ) {
+
+      return false;
+
+    }
+
+
+    this.editValidationErrors = {
+      title: '',
+      year: '',
+      rating: ''
+    };
+
+
+    const title =
+      this.editForm
+        .title
+        ?.trim() ??
+      '';
+
+    const year =
+      this.editForm
+        .year;
+
+    const rating =
+      this.editForm
+        .rating;
+
+
+    if (!title) {
+
+      this.editValidationErrors
+        .title =
+        'Title is required.';
+
+    }
+
+
+    if (
+      year !== null &&
+      year !== undefined &&
+      (
+        year < 1888 ||
+        year > 2100
+      )
+    ) {
+
+      this.editValidationErrors
+        .year =
+        'Year must be between 1888 and 2100.';
+
+    }
+
+
+    if (
+      rating !== null &&
+      rating !== undefined &&
+      (
+        rating < 0 ||
+        rating > 10
+      )
+    ) {
+
+      this.editValidationErrors
+        .rating =
+        'Rating must be between 0 and 10.';
+
+    }
+
+
+    return (
+      !this.editValidationErrors
+        .title &&
+      !this.editValidationErrors
+        .year &&
+      !this.editValidationErrors
+        .rating
+    );
+
+  }
+
+
+  saveEdit():
+    void {
+
+    if (
+      this.editingId ===
+      undefined ||
+      !this.editForm ||
+      !this.isAdmin
+    ) {
+
+      return;
+
+    }
+
+
+    if (
+      !this
+        .validateEditForm()
+    ) {
+
+      return;
+
+    }
+
+
+    const contentId =
+      this.editingId;
+
+
+    if (
+      this.savingEditIds
+        .has(
+          contentId
+        )
+    ) {
+
+      return;
+
+    }
+
+
+    const payload:
+      Content = {
+
+      ...this.editForm,
+
+      title:
+        this.editForm
+          .title
+          .trim(),
+
+      type:
+        this.editForm
+          .type ??
+        'MOVIE'
+
+    };
+
+
+    this.savingEditIds
+      .add(
+        contentId
+      );
+
+    this.errorMessage =
+      '';
+
+    this.successMessage =
+      '';
+
+
+    this.changeDetectorRef
+      .markForCheck();
+
+
+    this.contentService
+      .updateContent(
+        contentId,
+        payload
+      )
+      .pipe(
+
+        finalize(
+          () => {
+
+            this.savingEditIds
+              .delete(
+                contentId
+              );
+
+
+            this.changeDetectorRef
+              .markForCheck();
+
+          }
+        )
+
+      )
+      .subscribe({
+
+        next: (
+          updatedContent
+        ) => {
+
+          this.contents =
+            this.contents
+              .map(
+                content =>
+
+                  content.id ===
+                  contentId
+
+                    ? updatedContent
+
+                    : content
+              );
+
+
+          /*
+           * Important:
+           * Only close the form if the user
+           * is still editing this same item.
+           */
+          if (
+            this.editingId ===
+            contentId
+          ) {
+
+            this.cancelEdit();
+
+          }
+
+
+          this.successMessage =
+            'Content updated successfully.';
+
+          this.errorMessage =
+            '';
+
+
+          this.changeDetectorRef
+            .markForCheck();
+
+        },
+
+
+        error: (
+          error:
+          HttpErrorResponse
+        ) => {
+
+          if (
+            error.status ===
+            409
+          ) {
+
+            this.errorMessage =
+              error.error
+                ?.message ??
+              'This content was changed by another user. Reload and try again.';
+
+          } else if (
+            error.status ===
+            400
+          ) {
+
+            this.errorMessage =
+              error.error
+                ?.message ??
+              'Please check the entered values.';
+
+          } else if (
+            error.status ===
+            403
+          ) {
+
+            this.errorMessage =
+              'You do not have permission to edit content.';
+
+          } else {
+
+            this.errorMessage =
+              this
+                .getGeneralErrorMessage(
+                  error,
+                  'Content could not be updated.'
+                );
+
+          }
+
+
+          this.changeDetectorRef
+            .markForCheck();
+
+        }
+
+      });
 
   }
 
@@ -948,54 +1535,75 @@ export class MovieList implements OnInit, OnDestroy {
 
     return (
       id !== undefined &&
-      this.savingEditIds.has(id)
+      this.savingEditIds
+        .has(id)
     );
 
   }
 
 
+  /*
+   * Errors
+   */
+
   private getSearchErrorMessage(
-    error: HttpErrorResponse
+    error:
+    HttpErrorResponse
   ): string {
 
     if (
-      error.status === 404
+      error.status ===
+      404
     ) {
 
-      return 'Movie not found.';
+      return (
+        error.error
+          ?.message ??
+        'Movie not found.'
+      );
 
     }
 
 
     if (
-      error.status === 0
+      error.status ===
+      0
     ) {
 
-      return 'Cannot connect to the server.';
+      return (
+        'The movie service could not be reached.'
+      );
 
     }
 
 
     if (
-      error.status === 429
+      error.status ===
+      429
     ) {
 
-      return 'Movie service rate limit reached. Please try again shortly.';
+      return (
+        'Too many requests. Please try again shortly.'
+      );
 
     }
 
 
     if (
-      error.status >= 500
+      error.status >=
+      500
     ) {
 
-      return 'Movie service is temporarily unavailable.';
+      return (
+        'The movie service is temporarily unavailable.'
+      );
 
     }
 
 
     return (
-      error.error?.message ??
+      error.error
+        ?.message ??
       'Movie search failed.'
     );
 
@@ -1003,49 +1611,65 @@ export class MovieList implements OnInit, OnDestroy {
 
 
   private getGeneralErrorMessage(
-    error: HttpErrorResponse,
-    fallbackMessage: string
+    error:
+    HttpErrorResponse,
+
+    fallback:
+    string
   ): string {
 
     if (
-      error.status === 0
+      error.status ===
+      0
     ) {
 
-      return 'Cannot connect to the server.';
+      return (
+        'The server could not be reached.'
+      );
 
     }
 
 
     if (
-      error.status === 401
+      error.status ===
+      401
     ) {
 
-      return 'Please sign in again.';
+      return (
+        'Your session is no longer valid. Please log in again.'
+      );
 
     }
 
 
     if (
-      error.status === 403
+      error.status ===
+      403
     ) {
 
-      return 'You do not have permission to perform this action.';
+      return (
+        'You do not have permission to perform this action.'
+      );
 
     }
 
 
     if (
-      error.status >= 500
+      error.status >=
+      500
     ) {
 
-      return 'Server error. Please try again later.';
+      return (
+        'The server encountered an error. Please try again.'
+      );
 
     }
 
 
     return (
-      error.error?.message ??
-      fallbackMessage
+      error.error
+        ?.message ??
+      fallback
     );
 
   }

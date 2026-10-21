@@ -1,0 +1,375 @@
+<div class="page">
+
+  <div class="container">
+
+    <header class="header">
+
+      <div>
+        <h1>
+          Actor Management
+        </h1>
+
+        <p>
+          Manage actors and assign them to movies or series.
+        </p>
+      </div>
+
+      <div class="header-actions">
+
+        <div class="account">
+
+          <strong>
+            {{ currentEmail }}
+          </strong>
+
+          <span>
+            {{ currentRole }}
+          </span>
+
+        </div>
+
+        <button
+          type="button"
+          class="secondary"
+          (click)="goToMovies()"
+        >
+          Content
+        </button>
+
+        <button
+          type="button"
+          class="secondary"
+          (click)="goToCategories()"
+        >
+          Categories
+        </button>
+
+        <button
+          type="button"
+          class="secondary"
+          (click)="logout()"
+        >
+          Logout
+        </button>
+
+      </div>
+
+    </header>
+
+
+    <div
+      *ngIf="errorMessage"
+      class="message error"
+      role="alert"
+      aria-live="assertive"
+    >
+      {{ errorMessage }}
+    </div>
+
+
+    <div
+      *ngIf="successMessage"
+      class="message success"
+      role="status"
+      aria-live="polite"
+    >
+      {{ successMessage }}
+    </div>
+
+
+    <div class="layout">
+
+      <section class="panel">
+
+        <h2>
+          {{
+            editingId === null
+              ? 'Add Actor'
+              : 'Edit Actor'
+          }}
+        </h2>
+
+
+        <div class="field">
+
+          <label for="actor-name">
+            Name
+          </label>
+
+          <input
+            id="actor-name"
+            type="text"
+            [(ngModel)]="name"
+            placeholder="Actor name"
+          />
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="birth-date">
+            Birth Date
+          </label>
+
+          <input
+            id="birth-date"
+            type="date"
+            [(ngModel)]="birthDate"
+          />
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="photo">
+            Photo URL
+          </label>
+
+          <input
+            id="photo"
+            type="url"
+            [(ngModel)]="photo"
+            placeholder="https://..."
+          />
+
+        </div>
+
+
+        <div class="field">
+
+          <label for="biography">
+            Biography
+          </label>
+
+          <textarea
+            id="biography"
+            [(ngModel)]="biography"
+            rows="5"
+            placeholder="Short biography"
+          ></textarea>
+
+        </div>
+
+
+        <div class="form-actions">
+
+          <button
+            type="button"
+            class="primary"
+            (click)="saveActor()"
+            [disabled]="saving"
+          >
+            {{
+              saving
+                ? 'Saving...'
+                : (
+                  editingId === null
+                    ? 'Add Actor'
+                    : 'Save Changes'
+                )
+            }}
+          </button>
+
+
+          <button
+            *ngIf="editingId !== null"
+            type="button"
+            class="secondary"
+            (click)="cancelEdit()"
+          >
+            Cancel
+          </button>
+
+        </div>
+
+
+        <div class="actor-list">
+
+          <div
+            *ngFor="let actor of actors"
+            class="actor-row"
+          >
+
+            <img
+              *ngIf="actor.photo"
+              [src]="actor.photo"
+              [alt]="actor.name"
+            />
+
+            <div class="actor-info">
+
+              <strong>
+                {{ actor.name }}
+              </strong>
+
+              <span *ngIf="actor.birthDate">
+                {{ actor.birthDate }}
+              </span>
+
+            </div>
+
+
+            <div class="row-actions">
+
+              <button
+                type="button"
+                class="edit"
+                (click)="editActor(actor)"
+              >
+                Edit
+              </button>
+
+              <button
+                type="button"
+                class="delete"
+                (click)="deleteActor(actor)"
+              >
+                Delete
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <section class="panel">
+
+        <h2>
+          Assign Actors
+        </h2>
+
+
+        <div class="field">
+
+          <label for="content">
+            Content
+          </label>
+
+          <select
+            id="content"
+            [(ngModel)]="selectedContentId"
+            (ngModelChange)="onContentChange()"
+          >
+
+            <option [ngValue]="null">
+              Select content
+            </option>
+
+            <option
+              *ngFor="let content of contents"
+              [ngValue]="content.id"
+            >
+              {{ content.title }}
+              —
+              {{
+                content.type === 'SERIES'
+                  ? 'Series'
+                  : 'Movie'
+              }}
+            </option>
+
+          </select>
+
+        </div>
+
+
+        <div
+          *ngIf="selectedContentId !== null"
+          class="assign-area"
+        >
+
+          <div class="field">
+
+            <label for="actor">
+              Actor
+            </label>
+
+            <select
+              id="actor"
+              [(ngModel)]="selectedActorId"
+            >
+
+              <option [ngValue]="null">
+                Select actor
+              </option>
+
+              <option
+                *ngFor="let actor of availableActors"
+                [ngValue]="actor.id"
+              >
+                {{ actor.name }}
+              </option>
+
+            </select>
+
+          </div>
+
+
+          <button
+            type="button"
+            class="primary"
+            (click)="assignActor()"
+            [disabled]="
+              assigning ||
+              selectedActorId === null
+            "
+          >
+            {{
+              assigning
+                ? 'Assigning...'
+                : 'Assign'
+            }}
+          </button>
+
+
+          <h3>
+            Assigned Actors
+          </h3>
+
+
+          <p
+            *ngIf="assignedActors.length === 0"
+            class="empty"
+          >
+            No actors assigned.
+          </p>
+
+
+          <div class="chips">
+
+            <div
+              *ngFor="let actor of assignedActors"
+              class="chip"
+            >
+
+              {{ actor.name }}
+
+              <button
+                type="button"
+                (click)="removeActor(actor.id)"
+                [attr.aria-label]="
+                  'Remove ' + actor.name
+                "
+              >
+                ×
+              </button>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+    </div>
+
+  </div>
+
+</div>

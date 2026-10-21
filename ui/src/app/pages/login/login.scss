@@ -66,3 +66,31 @@ button:disabled {
   border-radius: 8px;
   margin-bottom: 16px;
 }
+
+
+.register-link {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  gap: 5px;
+
+  margin-top: 18px;
+
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.register-link-button {
+  padding: 0;
+
+  border: 0;
+
+  background: transparent;
+  color: #2563eb;
+
+  cursor: pointer;
+
+  font: inherit;
+  font-weight: 700;
+}

@@ -1,6 +1,9 @@
 package com.ahmet.backend.dto;
 
+import com.ahmet.backend.entity.ContentType;
+
 import jakarta.validation.constraints.*;
+
 import lombok.Getter;
 import lombok.Setter;
 
@@ -47,8 +50,13 @@ public class UpdateContentRequest {
 
 
     @NotNull(
+            message = "Content type is required"
+    )
+    private ContentType type;
+
+
+    @NotNull(
             message = "Version is required"
     )
     private Long version;
-
 }

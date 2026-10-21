@@ -11,6 +11,40 @@
     </p>
 
 
+    <div class="form-field">
+
+      <label for="email">
+        Email
+      </label>
+
+      <input
+        id="email"
+        type="email"
+        [(ngModel)]="email"
+        autocomplete="email"
+        placeholder="admin@test.com"
+      />
+
+    </div>
+
+
+    <div class="form-field">
+
+      <label for="password">
+        Password
+      </label>
+
+      <input
+        id="password"
+        type="password"
+        [(ngModel)]="password"
+        autocomplete="current-password"
+        (keyup.enter)="login()"
+      />
+
+    </div>
+
+
     <div
       *ngIf="errorMessage"
       class="error-message"
@@ -21,52 +55,34 @@
     </div>
 
 
-    <form
-      (ngSubmit)="login()"
+    <button
+      type="button"
+      class="sign-in-button"
+      (click)="login()"
+      [disabled]="loading"
     >
+      {{
+        loading
+          ? 'Signing in...'
+          : 'Sign In'
+      }}
+    </button>
 
-      <label for="email">
-        Email
-      </label>
+    <div class="register-link">
 
-      <input
-        id="email"
-        name="email"
-        type="email"
-        [(ngModel)]="email"
-        autocomplete="email"
-        required
-      />
-
-
-      <label for="password">
-        Password
-      </label>
-
-      <input
-        id="password"
-        name="password"
-        type="password"
-        [(ngModel)]="password"
-        autocomplete="current-password"
-        required
-      />
-
+  <span>
+    Don't have an account?
+  </span>
 
       <button
-        type="submit"
-        [disabled]="loading"
+        type="button"
+        class="register-link-button"
+        (click)="goToRegister()"
       >
-
-        {{
-          loading
-            ? 'Signing in...'
-            : 'Sign In'
-        }}
-
+        Create Account
       </button>
 
-    </form>
+    </div>
 
   </div>
 

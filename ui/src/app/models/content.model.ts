@@ -1,5 +1,8 @@
-export interface Content {
+export type ContentType =
+  'MOVIE' |
+  'SERIES';
 
+export interface Content {
   id?: number;
 
   title: string;
@@ -16,8 +19,9 @@ export interface Content {
 
   director: string;
 
+  type?: ContentType;
+
   createdAt?: string;
 
   version: number;
-
 }

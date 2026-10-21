@@ -1,9 +1,12 @@
 package com.ahmet.backend.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Entity
 @Table(name = "contents")
@@ -37,6 +40,18 @@ public class ContentEntity {
 
     private String director;
 
+    @Enumerated(
+            EnumType.STRING
+    )
+    @Column(
+            name = "content_type",
+            nullable = false,
+            length = 20
+    )
+    @Builder.Default
+    private ContentType type =
+            ContentType.MOVIE;
+
     @Version
     @Column(nullable = false)
     private Long version;
@@ -49,12 +64,58 @@ public class ContentEntity {
     private LocalDateTime createdAt;
 
 
+    @JsonIgnore
+    @ManyToMany
+    @JoinTable(
+            name = "content_categories",
+
+            joinColumns =
+            @JoinColumn(
+                    name = "content_id"
+            ),
+
+            inverseJoinColumns =
+            @JoinColumn(
+                    name = "category_id"
+            )
+    )
+    @Builder.Default
+    private Set<CategoryEntity>
+            categories =
+            new LinkedHashSet<>();
+
+
+    @JsonIgnore
+    @ManyToMany
+    @JoinTable(
+            name = "content_actors",
+
+            joinColumns =
+            @JoinColumn(
+                    name = "content_id"
+            ),
+
+            inverseJoinColumns =
+            @JoinColumn(
+                    name = "actor_id"
+            )
+    )
+    @Builder.Default
+    private Set<ActorEntity>
+            actors =
+            new LinkedHashSet<>();
+
+
     @PrePersist
     public void prePersist() {
 
         createdAt =
                 LocalDateTime.now();
 
-    }
+        if (type == null) {
 
+            type =
+                    ContentType.MOVIE;
+        }
+    }
 }

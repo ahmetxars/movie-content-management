@@ -31,9 +31,6 @@ import {
 })
 export class AuthService {
 
-  private readonly authApiUrl =
-    environment.authApiUrl;
-
   private readonly tokenKey =
     'auth_token';
 
@@ -43,36 +40,21 @@ export class AuthService {
   private readonly roleKey =
     'auth_role';
 
+  private readonly isBrowser:
+    boolean;
+
 
   constructor(
     private http: HttpClient,
 
     @Inject(PLATFORM_ID)
-    private platformId: object
-  ) {}
+    platformId: object
+  ) {
 
-
-  register(
-    email: string,
-    password: string
-  ): Observable<AuthResponse> {
-
-    return this.http
-      .post<AuthResponse>(
-        `${this.authApiUrl}/register`,
-        {
-          email,
-          password
-        }
-      )
-      .pipe(
-        tap(response =>
-          this.saveAuthentication(
-            response
-          )
-        )
+    this.isBrowser =
+      isPlatformBrowser(
+        platformId
       );
-
   }
 
 
@@ -83,26 +65,57 @@ export class AuthService {
 
     return this.http
       .post<AuthResponse>(
-        `${this.authApiUrl}/login`,
+        `${environment.authApiUrl}/login`,
         {
           email,
           password
         }
       )
       .pipe(
-        tap(response =>
-          this.saveAuthentication(
-            response
-          )
-        )
-      );
 
+        tap(response => {
+
+          if (!this.isBrowser) {
+            return;
+          }
+
+          localStorage.setItem(
+            this.tokenKey,
+            response.token
+          );
+
+          localStorage.setItem(
+            this.emailKey,
+            response.email
+          );
+
+          localStorage.setItem(
+            this.roleKey,
+            response.role
+          );
+        })
+      );
+  }
+
+
+  register(
+    email: string,
+    password: string
+  ): Observable<unknown> {
+
+    return this.http.post(
+      `${environment.authApiUrl}/register`,
+      {
+        email,
+        password
+      }
+    );
   }
 
 
   logout(): void {
 
-    if (!this.isBrowser()) {
+    if (!this.isBrowser) {
       return;
     }
 
@@ -117,109 +130,61 @@ export class AuthService {
     localStorage.removeItem(
       this.roleKey
     );
-
   }
 
 
-  getToken(): string | null {
+  getToken():
+    string | null {
 
-    if (!this.isBrowser()) {
+    if (!this.isBrowser) {
       return null;
     }
 
     return localStorage.getItem(
       this.tokenKey
     );
-
   }
 
 
-  getEmail(): string | null {
+  getEmail():
+    string | null {
 
-    if (!this.isBrowser()) {
+    if (!this.isBrowser) {
       return null;
     }
 
     return localStorage.getItem(
       this.emailKey
     );
-
   }
 
 
-  getRole(): 'USER' | 'ADMIN' | null {
+  getRole():
+    string | null {
 
-    if (!this.isBrowser()) {
+    if (!this.isBrowser) {
       return null;
     }
 
-    const role =
-      localStorage.getItem(
-        this.roleKey
-      );
-
-    if (
-      role === 'USER' ||
-      role === 'ADMIN'
-    ) {
-
-      return role;
-
-    }
-
-    return null;
-
+    return localStorage.getItem(
+      this.roleKey
+    );
   }
 
 
-  isLoggedIn(): boolean {
+  isLoggedIn():
+    boolean {
 
     return !!this.getToken();
-
   }
 
 
-  isAdmin(): boolean {
+  isAdmin():
+    boolean {
 
     return (
-      this.getRole() === 'ADMIN'
+      this.getRole() ===
+      'ADMIN'
     );
-
   }
-
-
-  private saveAuthentication(
-    response: AuthResponse
-  ): void {
-
-    if (!this.isBrowser()) {
-      return;
-    }
-
-    localStorage.setItem(
-      this.tokenKey,
-      response.token
-    );
-
-    localStorage.setItem(
-      this.emailKey,
-      response.email
-    );
-
-    localStorage.setItem(
-      this.roleKey,
-      response.role
-    );
-
-  }
-
-
-  private isBrowser(): boolean {
-
-    return isPlatformBrowser(
-      this.platformId
-    );
-
-  }
-
 }

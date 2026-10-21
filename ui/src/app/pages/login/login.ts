@@ -38,9 +38,11 @@ import {
     FormsModule
   ],
 
-  templateUrl: './login.html',
+  templateUrl:
+    './login.html',
 
-  styleUrl: './login.scss'
+  styleUrl:
+    './login.scss'
 })
 export class Login {
 
@@ -54,33 +56,72 @@ export class Login {
 
 
   constructor(
-    private authService: AuthService,
-    private router: Router,
-    private changeDetectorRef: ChangeDetectorRef
+    private authService:
+    AuthService,
+
+    private router:
+    Router,
+
+    private changeDetectorRef:
+    ChangeDetectorRef
   ) {}
+
+  goToRegister(): void {
+
+    this.router.navigate([
+      '/register'
+    ]);
+  }
 
 
   login(): void {
+
+
+
+    if (
+      this.loading
+    ) {
+      return;
+    }
+
 
     const email =
       this.email.trim();
 
 
     if (
-      !email ||
+      !email
+    ) {
+
+      this.errorMessage =
+        'Email is required.';
+
+      return;
+
+    }
+
+
+    if (
       !this.password
     ) {
 
       this.errorMessage =
-        'Email and password are required.';
+        'Password is required.';
 
       return;
+
     }
 
 
-    this.loading = true;
+    this.loading =
+      true;
 
-    this.errorMessage = '';
+    this.errorMessage =
+      '';
+
+
+    this.changeDetectorRef
+      .markForCheck();
 
 
     this.authService
@@ -90,14 +131,17 @@ export class Login {
       )
       .pipe(
 
-        finalize(() => {
+        finalize(
+          () => {
 
-          this.loading = false;
+            this.loading =
+              false;
 
-          this.changeDetectorRef
-            .markForCheck();
+            this.changeDetectorRef
+              .markForCheck();
 
-        })
+          }
+        )
 
       )
       .subscribe({
@@ -105,32 +149,39 @@ export class Login {
         next: () => {
 
           this.router
-            .navigate(['/movies']);
+            .navigateByUrl(
+              '/movies'
+            );
 
         },
 
+
         error: (
-          error: HttpErrorResponse
+          error:
+          HttpErrorResponse
         ) => {
 
           if (
-            error.status === 401
+            error.status ===
+            401
           ) {
 
             this.errorMessage =
               'Invalid email or password.';
 
           } else if (
-            error.status === 0
+            error.status ===
+            0
           ) {
 
             this.errorMessage =
-              'Cannot connect to the server.';
+              'Backend server could not be reached.';
 
           } else {
 
             this.errorMessage =
-              'Login failed. Please try again.';
+              error.error?.message ??
+              'Sign in failed.';
 
           }
 
@@ -145,7 +196,3 @@ export class Login {
   }
 
 }
-
-
-
-

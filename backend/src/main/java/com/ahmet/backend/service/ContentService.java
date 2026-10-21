@@ -5,6 +5,7 @@ import com.ahmet.backend.dto.CreateContentRequest;
 import com.ahmet.backend.dto.OmdbMovieDto;
 import com.ahmet.backend.dto.UpdateContentRequest;
 import com.ahmet.backend.entity.ContentEntity;
+import com.ahmet.backend.entity.ContentType;
 import com.ahmet.backend.exception.ConcurrentContentUpdateException;
 import com.ahmet.backend.exception.ContentNotFoundException;
 import com.ahmet.backend.exception.DuplicateContentException;
@@ -20,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 
@@ -118,16 +120,12 @@ public class ContentService {
 
         Pageable pageable =
                 PageRequest.of(
-
                         safePage,
-
                         safeSize,
-
                         Sort.by(
                                 direction,
                                 safeSortBy
                         )
-
                 );
 
 
@@ -157,7 +155,9 @@ public class ContentService {
                                         "%" +
                                                 title
                                                         .trim()
-                                                        .toLowerCase()
+                                                        .toLowerCase(
+                                                                Locale.ROOT
+                                                        )
                                                 + "%"
 
                                 )
@@ -185,7 +185,9 @@ public class ContentService {
                                         "%" +
                                                 genre
                                                         .trim()
-                                                        .toLowerCase()
+                                                        .toLowerCase(
+                                                                Locale.ROOT
+                                                        )
                                                 + "%"
 
                                 )
@@ -195,9 +197,7 @@ public class ContentService {
                     }
 
 
-                    if (
-                            minRating != null
-                    ) {
+                    if (minRating != null) {
 
                         predicates.add(
 
@@ -309,6 +309,10 @@ public class ContentService {
                                 request.getDirector()
                         )
 
+                        .type(
+                                request.getType()
+                        )
+
                         .build();
 
 
@@ -344,7 +348,7 @@ public class ContentService {
 
             throw new ConcurrentContentUpdateException(
 
-                    "This movie was changed by another user. "
+                    "This content was changed by another user. "
                             + "Reload the latest version and try again."
 
             );
@@ -408,6 +412,10 @@ public class ContentService {
                 request.getDirector()
         );
 
+        existingContent.setType(
+                request.getType()
+        );
+
 
         try {
 
@@ -422,7 +430,7 @@ public class ContentService {
 
             throw new ConcurrentContentUpdateException(
 
-                    "This movie was changed by another user. "
+                    "This content was changed by another user. "
                             + "Reload the latest version and try again."
 
             );
@@ -542,6 +550,10 @@ public class ContentService {
 
                         .director(
                                 movie.getDirector()
+                        )
+
+                        .type(
+                                ContentType.MOVIE
                         )
 
                         .build();

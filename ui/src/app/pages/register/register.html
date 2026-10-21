@@ -1,0 +1,116 @@
+<div class="register-page">
+
+  <div class="register-card">
+
+    <h1>
+      Create Account
+    </h1>
+
+    <p class="subtitle">
+      Create a user account to access the content library.
+    </p>
+
+
+    <div class="form-field">
+
+      <label for="register-email">
+        Email
+      </label>
+
+      <input
+        id="register-email"
+        type="email"
+        [(ngModel)]="email"
+        autocomplete="email"
+        placeholder="you@example.com"
+      />
+
+    </div>
+
+
+    <div class="form-field">
+
+      <label for="register-password">
+        Password
+      </label>
+
+      <input
+        id="register-password"
+        type="password"
+        [(ngModel)]="password"
+        autocomplete="new-password"
+      />
+
+    </div>
+
+
+    <div class="form-field">
+
+      <label for="register-confirm-password">
+        Confirm Password
+      </label>
+
+      <input
+        id="register-confirm-password"
+        type="password"
+        [(ngModel)]="confirmPassword"
+        autocomplete="new-password"
+        (keyup.enter)="register()"
+      />
+
+    </div>
+
+
+    <div
+      *ngIf="errorMessage"
+      class="message error"
+      role="alert"
+      aria-live="assertive"
+    >
+      {{ errorMessage }}
+    </div>
+
+
+    <div
+      *ngIf="successMessage"
+      class="message success"
+      role="status"
+      aria-live="polite"
+    >
+      {{ successMessage }}
+    </div>
+
+
+    <button
+      type="button"
+      class="primary-button"
+      (click)="register()"
+      [disabled]="loading"
+    >
+      {{
+        loading
+          ? 'Creating Account...'
+          : 'Create Account'
+      }}
+    </button>
+
+
+    <div class="login-link">
+
+      <span>
+        Already have an account?
+      </span>
+
+      <button
+        type="button"
+        class="link-button"
+        (click)="goToLogin()"
+      >
+        Sign In
+      </button>
+
+    </div>
+
+  </div>
+
+</div>

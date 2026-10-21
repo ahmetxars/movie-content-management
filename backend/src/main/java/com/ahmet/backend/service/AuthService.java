@@ -131,6 +131,12 @@ public class AuthService {
                     "Invalid email or password."
             );
         }
+        if (!user.isEnabled()) {
+
+            throw new InvalidCredentialsException(
+                    "Account is disabled."
+            );
+        }
 
 
         String token =

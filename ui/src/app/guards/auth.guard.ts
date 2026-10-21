@@ -1,6 +1,11 @@
 import {
-  inject
+  inject,
+  PLATFORM_ID
 } from '@angular/core';
+
+import {
+  isPlatformBrowser
+} from '@angular/common';
 
 import {
   CanActivateFn,
@@ -12,27 +17,45 @@ import {
 } from '../services/auth.service';
 
 
-export const authGuard: CanActivateFn =
-  () => {
+export const authGuard:
+  CanActivateFn = () => {
 
-    const authService =
-      inject(AuthService);
+  const authService =
+    inject(AuthService);
 
-    const router =
-      inject(Router);
+  const router =
+    inject(Router);
 
-
-    if (
-      authService.isLoggedIn()
-    ) {
-
-      return true;
-
-    }
+  const platformId =
+    inject(PLATFORM_ID);
 
 
-    return router.createUrlTree([
-      '/login'
-    ]);
+  /*
+   * SSR sırasında localStorage yok.
+   *
+   * Burada kullanıcıyı login'e atarsak,
+   * direkt /users gibi bir URL açıldığında
+   * server her zaman unauthenticated görür.
+   *
+   * Yetki kontrolünü browser tarafına bırakıyoruz.
+   */
+  if (
+    !isPlatformBrowser(platformId)
+  ) {
 
-  };
+    return true;
+  }
+
+
+  if (
+    authService.isLoggedIn()
+  ) {
+
+    return true;
+  }
+
+
+  return router.createUrlTree([
+    '/login'
+  ]);
+};
